@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Voice Assistant</title>
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:400,600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Global resets and fonts */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Open Sans", sans-serif;
+        background: #f5f6fa;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      /* Error message styling */
+      .error {
+        color: #e74c3c;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        display: none;
+      }
+      /* Modern styled start button with animated outline on click */
+      .start {
+        position: relative;
+        padding: 12px 40px;
+        font-size: 18px;
+        font-weight: 600;
+        border: 2px solid transparent;
+        border-radius: 50px;
+        background: #3498db;
+        color: #fff;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.3s ease;
+      }
+      .start:focus,
+      .start:active {
+        border-color: #fff;
+        animation: outlinePulse 0.6s ease;
+      }
+      @keyframes outlinePulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.8);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+        }
+      }
+      /* Container styling for the assistant UI */
+      .container {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        margin-top: 2rem;
+        width: 90%;
+        max-width: 500px;
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      }
+      /* Microphone icon and status dot animation */
+      .mic-wrapper {
+        position: relative;
+        margin-bottom: 1.5rem;
+      }
+      .mic-icon {
+        font-size: 4rem;
+        color: #3498db;
+      }
+      .dot {
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        width: 10px;
+        height: 10px;
+        background: #3498db;
+        border-radius: 50%;
+        transform: translateX(-50%);
+        animation: pulse 1s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0% {
+          transform: translateX(-50%) scale(0.8);
+          opacity: 0.7;
+        }
+        50% {
+          transform: translateX(-50%) scale(1.2);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(-50%) scale(0.8);
+          opacity: 0.7;
+        }
+      }
+      /* Command text styling */
+      .command {
+        font-size: 1.2rem;
+        text-align: center;
+        color: #2c3e50;
+        min-height: 50px;
+      }
+      /* Responsive adjustments */
+      @media screen and (max-width: 600px) {
+        .start {
+          padding: 10px 30px;
+          font-size: 16px;
+        }
+        .container {
+          padding: 1.5rem;
+          margin-top: 1.5rem;
+        }
+        .mic-icon {
+          font-size: 3.5rem;
+        }
+      }
+      /* Info footer */
+      .info {
+        font-size: 0.9rem;
+        color: #95a5a6;
+        position: fixed;
+        bottom: 10px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 class="error">
+      Speech Recognition is not supported in your browser. Please try Chrome.
+    </h1>
+
+    <button class="start">
+      Start Talking &nbsp;<i class="fa fa-microphone"></i>
+    </button>
+
+    <div class="container">
+      <div class="mic-wrapper">
+        <i class="fa fa-microphone mic-icon"></i>
+        <!-- Dot animation appears when speaking -->
+        <div class="dot" style="display: none;"></div>
+      </div>
+      <div class="command">Waiting for your command...</div>
+    </div>
+
+    <div class="info">
+      Modern Voice Assistant - Always listening, even after hours!
+    </div>
+
+    <script src="answer.js"></script>
+    <script
+      src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      // Check for Speech Recognition API
+      window.SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = window.SpeechRecognition
+        ? new window.SpeechRecognition()
+        : null;
+
+      const startBtn = document.querySelector(".start");
+      const container = document.querySelector(".container");
+      const errorMsg = document.querySelector(".error");
+      const commandDiv = document.querySelector(".command");
+      const dot = document.querySelector(".dot");
+
+      // If browser doesn't support, show error message
+      if (!recognition) {
+        errorMsg.style.display = "block";
+        startBtn.style.display = "none";
+      } else {
+        // Basic Speech Recognition Setup
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        recognition.onstart = () => {
+          dot.style.display = "block"; // show dot animation when recognition starts
+          commandDiv.textContent = "Listening...";
+        };
+
+        recognition.onresult = (event) => {
+          let transcript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          commandDiv.textContent = transcript.trim();
+        };
+
+        recognition.onerror = (event) => {
+          console.error("Speech recognition error", event.error);
+        };
+
+        recognition.onend = () => {
+          dot.style.display = "none"; // hide dot when recognition stops
+          commandDiv.textContent =
+            "Recognition stopped. Restarting listening...";
+
+          // Restart recognition after 1 minute
+          setTimeout(() => {
+            recognition.start();
+          }, 60000); // 60000ms = 1 minute
+        };
+
+        // Start recognition when start button is clicked
+        startBtn.addEventListener("click", () => {
+          startBtn.style.display = "none";
+          container.style.display = "flex";
+          recognition.start();
+        });
+      }
+    </script>
+  </body>
+</html>
